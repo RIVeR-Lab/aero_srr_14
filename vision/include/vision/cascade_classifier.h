@@ -52,7 +52,7 @@ using namespace boost;
  typedef struct {
    cv::Rect rect;
    cv::Point2d detection_center;
-   cv::Point2d disparity_center;
+   cv::Rect disparity_rect;
    float disp_val;
    cv::Point3d projected_position;
  } detection_object;
@@ -75,9 +75,11 @@ using namespace boost;
    int min_neighbors_;
    cv::Size min_size_;
    cv::Size max_size_;
+   cv::Size disparity_size_;
+   int disparity_y_offset_;
    float max_disparity_for_detection_;
  public:
- training_definition(int id, std::string label, std::string cascade_path, double object_radius, double scale_factor, int min_neighbors, cv::Size min_size, cv::Size max_size, float max_disparity_for_detection) : id_(id), label_(label), cascade_path_(cascade_path), object_radius_(object_radius), scale_factor_(scale_factor), min_neighbors_(min_neighbors), min_size_(min_size), max_size_(max_size), max_disparity_for_detection_(max_disparity_for_detection){
+ training_definition(int id, std::string label, std::string cascade_path, double object_radius, double scale_factor, int min_neighbors, cv::Size min_size, cv::Size max_size, cv::Size disparity_size, int disparity_y_offset, float max_disparity_for_detection) : id_(id), label_(label), cascade_path_(cascade_path), object_radius_(object_radius), scale_factor_(scale_factor), min_neighbors_(min_neighbors), min_size_(min_size), max_size_(max_size), disparity_size_(disparity_size), disparity_y_offset_(disparity_y_offset), max_disparity_for_detection_(max_disparity_for_detection){
      if (!cascade_classifier_.load(cascade_path_)) {
        ROS_ERROR("Error loading cascade classifier: %s", cascade_path_.c_str());
      }
@@ -87,6 +89,8 @@ using namespace boost;
    std::string label(){return label_;}
    double object_radius(){return object_radius_;}
    std::string cascade_path(){return cascade_path_;}
+   cv::Size disparity_size(){return disparity_size_;}
+   int disparity_y_offset(){return disparity_y_offset_;}
    float max_disparity_for_detection(){return max_disparity_for_detection_;}
     
    detection_set detect(cv::Mat image_gray, training_definition_ptr self){
@@ -162,7 +166,7 @@ class CascadeClassifier{
 	      const CameraInfoConstPtr& r_info_msg);
 
   void detect_and_publish(const std::string& l_camera_frame, const ros::Time& time, cv::Mat& l_mat, cv::Mat& d_image);
-  float average_disparity(const cv::Mat& disp, const cv::Point2d& pt, int width, int height);
+  float average_disparity(const cv::Mat& disp, const cv::Rect& disp_rect);
 
   void putTextCenter(cv::Mat& img, const std::string& text, cv::Point org, int font_face, double scale, cv::Scalar color, int thickness = 1);
 

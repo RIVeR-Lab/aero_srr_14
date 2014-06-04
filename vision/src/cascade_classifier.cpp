@@ -127,10 +127,11 @@ namespace vision{
 	  object.detection_center = cv::Point2d(object.rect.x + object.rect.width / 2,
 						object.rect.y + object.rect.height / 2);
 
-	  object.disparity_center = cv::Point2d(object.detection_center.x,
-						object.detection_center.y+30);
+	  object.disparity_rect = cv::Rect(object.detection_center.x - definition->disparity_size().width/2,
+					   object.detection_center.y + definition->disparity_y_offset() - definition->disparity_size().height/2,
+					   definition->disparity_size().width, definition->disparity_size().height);
 
-	  object.disp_val = average_disparity(d_image, object.disparity_center, 20, 40);
+	  object.disp_val = average_disparity(d_image, object.disparity_rect);
 
 	  stereo_model_.projectDisparityTo3d(object.detection_center, object.disp_val, object.projected_position);
 	  object.projected_position.z += definition->object_radius();
@@ -182,16 +183,25 @@ namespace vision{
 	cv::ellipse(l_mat, object.detection_center,
 		    cv::Size(object.rect.width / 2, object.rect.height / 2),
 		    0, 0, 360, color, 2, 8, 0);
+	cv::rectangle(l_mat,
+		      cv::Point(object.disparity_rect.x,
+                                object.disparity_rect.y),
+		      cv::Point(object.disparity_rect.x + object.disparity_rect.width,
+                                object.disparity_rect.y + object.disparity_rect.height),
+		      color, 1);
 
 	putTextCenter(l_mat, detection.definition->label(), object.detection_center,
 		      CV_FONT_HERSHEY_SIMPLEX, 1,
 		      cv::Scalar(39, 100, 206), 2);
 
+	cv::ellipse(disparity_color, object.detection_center,
+		    cv::Size(object.rect.width / 2, object.rect.height / 2),
+		    0, 0, 360, color, 2, 8, 0);
 	cv::rectangle(disparity_color,
-		      cv::Point(object.disparity_center.x - 10 / 2,
-                                object.disparity_center.y - 20 / 2),
-		      cv::Point(object.disparity_center.x + 10 / 2,
-                                object.disparity_center.y + 20 / 2),
+		      cv::Point(object.disparity_rect.x,
+                                object.disparity_rect.y),
+		      cv::Point(object.disparity_rect.x + object.disparity_rect.width,
+                                object.disparity_rect.y + object.disparity_rect.height),
 		      color, 2);
 
 
@@ -222,14 +232,12 @@ namespace vision{
 
   }
 
-  float CascadeClassifier::average_disparity(const cv::Mat& disp, const cv::Point2d& pt, int width, int height) {
-    int startx = pt.x - width/2;
-    int starty = pt.y - height/2;
+  float CascadeClassifier::average_disparity(const cv::Mat& disp, const cv::Rect& rect) {
     int ctr = 0;
     float sum = 0.0;
-    for (int i = 0; i < width; i++) {
-      for (int j = 0; j < height; j++) {
-	float value = disp.at<float>(starty + i, startx + j);
+    for (int i = 0; i < rect.width; i++) {
+      for (int j = 0; j < rect.height; j++) {
+	float value = disp.at<float>(rect.y + j, rect.x + i);
 	if (value > 0.0){
 	  sum = sum + value;
 	  ctr++;
@@ -270,6 +278,7 @@ namespace vision{
     ROS_ASSERT(training_description["object_radius"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
     ROS_ASSERT(training_description["scale_factor"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
     ROS_ASSERT(training_description["min_neighbors"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+    ROS_ASSERT(training_description["disparity_y_offset"].getType() == XmlRpc::XmlRpcValue::TypeInt);
     ROS_ASSERT(training_description["max_disparity_for_detection"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
     return training_definition_ptr(new training_definition(
 	(int)training_description["id"],
@@ -280,6 +289,8 @@ namespace vision{
 	(int)training_description["min_neighbors"],
 	parse_size(training_description["min_size"]),
 	parse_size(training_description["max_size"]),
+	parse_size(training_description["disparity_size"]),
+	(int)training_description["disparity_y_offset"],
         (float)(double)training_description["max_disparity_for_detection"] ));
   }
 
