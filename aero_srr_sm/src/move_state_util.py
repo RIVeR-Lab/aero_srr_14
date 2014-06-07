@@ -29,17 +29,19 @@ def create_move_goal(frame_id, stamp, x, y, angle):
         ));
     return goal
     
-
-def create_move_state(x, y, angle):
-    goal = create_move_goal("aero/odom", rospy.get_rostime(), x, y, angle)
+def create_move_state_in_frame(frame_id, x, y, angle):
+    goal = create_move_goal(frame_id, rospy.get_rostime(), x, y, angle)
     return smach_ros.SimpleActionState('/aero/move_base', MoveBaseAction, goal)
 
+def create_move_state(x, y, angle):
+    return create_move_state_in_frame("aero/odom", x, y, angle)
 
-def create_spiral_search_state(x, y, angle, search_radius, start_radius, circle_separation, angle_increment):
+
+def create_spiral_search_state_in_frame(frame_id, x, y, angle, search_radius, start_radius, circle_separation, angle_increment):
     center_angle = tf.transformations.quaternion_from_euler(0, 0, angle);
     goal=SpiralSearchGoal(
         center=PoseStamped(
-            header = Header(frame_id="aero/odom"),
+            header = Header(frame_id=frame_id),
             pose   = Pose(
                 position = Point(x = x, y = y, z = 0),
                 orientation = Quaternion(x = center_angle[0],
@@ -55,3 +57,6 @@ def create_spiral_search_state(x, y, angle, search_radius, start_radius, circle_
         );
 
     return smach_ros.SimpleActionState('/aero/spiral_search', SpiralSearchAction, goal)
+
+def create_spiral_search_state(x, y, angle, search_radius, start_radius, circle_separation, angle_increment):
+    return create_spiral_search_state_in_frame("aero/odom", x, y, angle, search_radius, start_radius, circle_separation, angle_increment)

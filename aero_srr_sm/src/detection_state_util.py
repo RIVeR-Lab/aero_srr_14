@@ -12,7 +12,6 @@ from geometry_msgs.msg import *
 from nav_msgs.msg import *
 
 def detect_monitor_cb(ud, msg):
-    #print msg
     ud['detection_msg'] = msg
     return False
 
