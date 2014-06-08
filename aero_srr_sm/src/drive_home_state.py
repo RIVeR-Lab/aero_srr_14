@@ -12,31 +12,6 @@ import math
 from detection_state_util import *
 
 
-def child_beacon_term_cb(outcome_map):
-    if outcome_map['WAIT_FOR_DETECTION'] == 'invalid':
-        return True
-    elif outcome_map['DRIVE_WHILE_DETECTING'] == 'succeeded':
-        return True
-    elif outcome_map['DRIVE_WHILE_DETECTING'] == 'preempted':
-        return True
-    elif outcome_map['DRIVE_WHILE_DETECTING'] == 'aborted':
-        return True
-    else:
-        return False
-
-def out_beacon_cb(outcome_map):
-    if outcome_map['WAIT_FOR_DETECTION'] == 'invalid':
-        return 'succeeded'
-    elif outcome_map['DRIVE_WHILE_DETECTING'] == 'succeeded':
-        return 'aborted'
-    elif outcome_map['DRIVE_WHILE_DETECTING'] == 'preempted':
-        return 'preempted'
-    elif outcome_map['DRIVE_WHILE_DETECTING'] == 'aborted':
-        return 'aborted'
-    else:
-        return 'aborted'
-
-
 def detect_beacon_monitor_cb(ud, msg):
     ud['detection_msg'] = msg
     return False
@@ -50,8 +25,9 @@ def create_drive_home_state():
     with drive_home_state:
         search_concurrence = smach.Concurrence(outcomes=['succeeded', 'aborted', 'preempted'],
                                                     default_outcome='aborted',
-                                                    child_termination_cb=child_beacon_term_cb,
-                                                    outcome_cb=out_beacon_cb)
+                                                    outcome_map={'succeeded': {'WAIT_FOR_DETECTION': 'invalid'},
+                                                                 'aborted': {'DRIVE_WHILE_DETECTING': 'succeeded'},
+                                                                 'preempted': {'DRIVE_WHILE_DETECTING': 'preempted'} })
         with search_concurrence:
             smach.Concurrence.add('WAIT_FOR_DETECTION', create_detect_beacon_state())
 
@@ -62,7 +38,7 @@ def create_drive_home_state():
                                        transitions={'succeeded':'SPIRAL_NEAR_PLATFORM',
                                                     'aborted':'aborted',
                                                     'preempted':'preempted'})
-                smach.StateMachine.add('SPIRAL_NEAR_PLATFORM', create_spiral_search_state_in_frame('aero/starting_location', 10, 0, 0, 10, 2, 2, math.pi/3),
+                smach.StateMachine.add('SPIRAL_NEAR_PLATFORM', create_spiral_search_state_in_frame('aero/starting_location', 10, 0, math.pi, 20, 4, 4, math.pi/4),
                                        transitions={'succeeded':'succeeded',
                                                     'aborted':'aborted',
                                                     'preempted':'preempted'})
@@ -74,8 +50,7 @@ def create_drive_home_state():
                                             'preempted': 'preempted'})
 
         smach.StateMachine.add('WAIT_BEFORE_NAV_IN_FRONT_OF_PLATFORM', DelayState(2.0),
-                               transitions={'succeeded':'MOVE_IN_FRONT_OF_PLATFORM',
-                                            'aborted':'aborted'})
+                               transitions={'succeeded':'MOVE_IN_FRONT_OF_PLATFORM'})
 
             
         smach.StateMachine.add('MOVE_IN_FRONT_OF_PLATFORM',

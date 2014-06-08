@@ -89,41 +89,54 @@ def main():
         smach.StateMachine.add('UNSHUTTER_LASER', create_unshutter_laser_state(),
                                transitions={'succeeded':'MOVE_TOWARDS_PRECACHE'})
         smach.StateMachine.add('MOVE_TOWARDS_PRECACHE',
-                               create_move_state(25, 0, 0),
+                               create_move_state(20, 0, 0),
                                transitions={'succeeded':'SEARCH_FOR_PRECACHE',
                                             'aborted':'MOVE_TOWARDS_PRECACHE',
                                             'preempted':'MOVE_TOWARDS_PRECACHE'})
 
         
-        drive_detect_concurrence = smach.Concurrence(outcomes=['succeeded', 'failed'],
-                                                    default_outcome='failed',
+        drive_detect_concurrence = smach.Concurrence(outcomes=['succeeded', 'aborted', 'preempted'],
+                                                    default_outcome='aborted',
                                                     output_keys=['detection_msg'],
-                                                    child_termination_cb=child_term_cb,
-                                                    outcome_cb=out_cb)
+                                                    outcome_map={'succeeded': {'WAIT_FOR_DETECTION': 'invalid'},
+                                                                 'aborted': {'DRIVE_WHILE_DETECTING': 'succeeded'},
+                                                                 'preempted': {'DRIVE_WHILE_DETECTING': 'preempted'} })
 
         spiral_goal = SpiralSearchGoal()
         with drive_detect_concurrence:
-                smach.Concurrence.add('WAIT_FOR_DETECTION', create_detect_state())
-                smach.Concurrence.add('DRIVE_WHILE_DETECTING', create_spiral_search_state(25, 0, 0, 10, 2, 2, math.pi/3))
+            smach.Concurrence.add('WAIT_FOR_DETECTION', create_detect_state())
+            drive_search_state = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
+            with drive_search_state:
+                smach.StateMachine.add('CONTINUE_TOWARDS_PRECACHE',
+                                       create_move_state(25, 0, 0),
+                                       transitions={'succeeded':'SPIRAL',
+                                                    'aborted':'SPIRAL',
+                                                    'preempted':'SPIRAL'})
+                smach.StateMachine.add('SPIRAL', create_spiral_search_state(25, 0, 0, 10, 2, 2, math.pi/3))
+            smach.Concurrence.add('DRIVE_WHILE_DETECTING', drive_search_state)
+
+        smach.StateMachine.add('UNSHUTTER_LASER_BEFORE_SEARCH', create_unshutter_laser_state(),
+                               transitions={'succeeded':'SEARCH_FOR_PRECACHE'})
+
         smach.StateMachine.add('SEARCH_FOR_PRECACHE', drive_detect_concurrence,
                                transitions={'succeeded':'SHUTTER_LASER_FOR_PICKUP',
-                                            'failed':'SEARCH_FOR_PRECACHE'})
+                                            'aborted':'SEARCH_FOR_PRECACHE',
+                                            'preempted':'SEARCH_FOR_PRECACHE'})
 
-        smach.StateMachine.add('SHUTTER_LASER_FOR_PICKUP', SimplePublisherState('/aero/laser_shutter', Bool, Bool(True), True, ['detection_msg']),
+        smach.StateMachine.add('SHUTTER_LASER_FOR_PICKUP', SimplePublisherState('/aero/laser_shutter', Bool, Bool(True), True, io_keys=['detection_msg']),
                                transitions={'succeeded':'CHECK_NEAR_PRECACHE'})
 
 
         smach.StateMachine.add('WAIT_BEFORE_DETECT', DelayState(2.0),
-                               transitions={'succeeded':'DETECT',
-                                            'aborted':'DETECT'})
+                               transitions={'succeeded':'DETECT'})
 
         smach.StateMachine.add('DRIVE_BACKWARD_BEFORE_DETECT', create_drive_backward_state(0.5, 2),
                                transitions={'succeeded':'DETECT'})
 
-        smach.StateMachine.add('DETECT', create_detect_state(),
+        smach.StateMachine.add('DETECT', add_state_timeout(5.0, create_detect_state()),
                                transitions={'invalid':'CHECK_NEAR_PRECACHE',
-                                            'valid':'SEARCH_FOR_PRECACHE',
-                                            'preempted':'SEARCH_FOR_PRECACHE'})
+                                            'valid':'UNSHUTTER_LASER_BEFORE_SEARCH',
+                                            'preempted':'UNSHUTTER_LASER_BEFORE_SEARCH'})
 
         smach.StateMachine.add('CHECK_NEAR_PRECACHE', CheckNearPrecacheState(),
                                transitions={'far':'NAV_NEAR_PRECACHE',
@@ -133,20 +146,25 @@ def main():
 
         smach.StateMachine.add('NAV_NEAR_PRECACHE', DetectionDriveState(-1.5, -0.2),
                                transitions={'succeeded':'WAIT_BEFORE_DETECT',
-                                            'aborted':'SEARCH_FOR_PRECACHE',
+                                            'aborted':'UNSHUTTER_LASER_BEFORE_SEARCH',
                                             'preempted':'DETECT'})
 
         smach.StateMachine.add('NAV_CLOSE_PRECACHE', DetectionDriveState(-0.7, -0.2),
                                transitions={'succeeded':'WAIT_BEFORE_DETECT',
-                                            'aborted':'SEARCH_FOR_PRECACHE',
+                                            'aborted':'UNSHUTTER_LASER_BEFORE_SEARCH',
                                             'preempted':'DETECT'})
 
         smach.StateMachine.add('PICKUP_PRECACHE', DetectionPickupState(),
-                               transitions={'succeeded':'UNSHUTTER_LASER_AFTER_PICKUP',
+                               transitions={'succeeded':'DETECT_AFTER_PICKUP',
                                             'aborted':'DRIVE_BACKWARD_BEFORE_DETECT',
                                             'preempted':'DRIVE_BACKWARD_BEFORE_DETECT'})
 
-        smach.StateMachine.add('UNSHUTTER_LASER_AFTER_PICKUP', SimplePublisherState('/aero/laser_shutter', Bool, Bool(False), True),
+        smach.StateMachine.add('DETECT_AFTER_PICKUP', add_state_timeout(5.0, create_detect_state()),
+                               transitions={'invalid':'DETECT',
+                                            'valid':'UNSHUTTER_LASER_AFTER_PICKUP',
+                                            'preempted':'UNSHUTTER_LASER_AFTER_PICKUP'})
+        
+        smach.StateMachine.add('UNSHUTTER_LASER_AFTER_PICKUP', create_unshutter_laser_state(),
                                transitions={'succeeded':'RETURN_TO_START'})
 
         smach.StateMachine.add('RETURN_TO_START',

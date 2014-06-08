@@ -10,6 +10,7 @@ from jaco_msgs.srv import *
 import tf
 from geometry_msgs.msg import *
 from nav_msgs.msg import *
+from state_util import *
 
 def detect_monitor_cb(ud, msg):
     ud['detection_msg'] = msg
@@ -17,15 +18,6 @@ def detect_monitor_cb(ud, msg):
 
 def create_detect_state():
     return smach_ros.MonitorState("/aero/lower_stereo/object_detection/filtered", PoseStamped, detect_monitor_cb, output_keys = ['detection_msg'])
-
-class DelayState( smach.State ):
-    def __init__( self, delay = 3.0 ):
-        smach.State.__init__(self,outcomes=['succeeded', 'aborted'])
-        self.delay = delay
-
-    def execute( self, userdata ):
-        rospy.sleep( self.delay )
-        return 'succeeded'
 
 class CheckNearPrecacheState(smach.State):
     def __init__(self):
