@@ -132,7 +132,7 @@ def main():
         smach.StateMachine.add('DRIVE_BACKWARD_BEFORE_DETECT', create_drive_backward_state(0.5, 2),
                                transitions={'succeeded':'DETECT'})
 
-        smach.StateMachine.add('DETECT', add_state_timeout(5.0, create_detect_state()),
+        smach.StateMachine.add('DETECT', add_state_timeout(2.0, create_detect_state()),
                                transitions={'invalid':'CHECK_NEAR_PRECACHE',
                                             'valid':'UNSHUTTER_LASER_BEFORE_SEARCH',
                                             'preempted':'UNSHUTTER_LASER_BEFORE_SEARCH'})
@@ -168,7 +168,7 @@ def main():
                                             'aborted':'STOW_AFTER_PICKUP',
                                             'preempted':'STOW_AFTER_PICKUP'})
 
-        smach.StateMachine.add('DETECT_AFTER_PICKUP', add_state_timeout(5.0, create_detect_state()),
+        smach.StateMachine.add('DETECT_AFTER_PICKUP', add_state_timeout(2.0, create_detect_state()),
                                transitions={'invalid':'DETECT',
                                             'valid':'UNSHUTTER_LASER_AFTER_PICKUP',
                                             'preempted':'UNSHUTTER_LASER_AFTER_PICKUP'})
