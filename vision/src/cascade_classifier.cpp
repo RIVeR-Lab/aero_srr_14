@@ -112,7 +112,9 @@ namespace vision{
 	return;
     }
 
+#ifndef USE_GPU
 #pragma omp parallel for shared(detections)
+#endif
     for(int i = 0; i<training_definitions_.size(); ++i){
       training_definition_ptr definition = training_definitions_[i];
 
@@ -138,7 +140,9 @@ namespace vision{
 	}
       }
 
+#ifndef USE_GPU
 #pragma omp critical
+#endif
       {
         detections.push_back(detection);
       }
