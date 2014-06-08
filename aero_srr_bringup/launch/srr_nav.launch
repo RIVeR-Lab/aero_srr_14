@@ -18,11 +18,11 @@
     <param name="sensor_timeout" value="1.0"/>
     <param name="odom_used" value="true"/>
     <param name="imu_used" value="true"/>
-    <param name="vo_used" value="false"/>
+    <param name="vo_used" value="true"/>
     <param name="debug" value="false"/>
     <param name="self_diagnose" value="false"/>
     <remap from="imu_data" to="imu/data"/>
-    <remap from="vo" to="stereo_odometer/odometry"/>
+    <remap from="vo" to="upper_stereo/stereo_odometer/odometry"/>
   </node>
   <node pkg="srr_search" type="spiral_search_server.py" name="spiral_search_server" ns="aero">
   </node>
