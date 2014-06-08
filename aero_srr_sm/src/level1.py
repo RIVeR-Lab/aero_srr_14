@@ -75,7 +75,7 @@ def main():
                                transitions={'succeeded':'STOW_ARM',
                                             'aborted':'WAIT_FOR_START',
                                             'preempted':'WAIT_FOR_START'})
-
+        
         smach.StateMachine.add('STOW_ARM', ArmStowState(),
                                transitions={'succeeded':'LEAVE_PLATFORM',
                                             'aborted':'LEAVE_PLATFORM',
@@ -98,9 +98,8 @@ def main():
         drive_detect_concurrence = smach.Concurrence(outcomes=['succeeded', 'aborted', 'preempted'],
                                                     default_outcome='aborted',
                                                     output_keys=['detection_msg'],
-                                                    outcome_map={'succeeded': {'WAIT_FOR_DETECTION': 'invalid'},
-                                                                 'aborted': {'DRIVE_WHILE_DETECTING': 'succeeded'},
-                                                                 'preempted': {'DRIVE_WHILE_DETECTING': 'preempted'} })
+                                                    child_termination_cb=child_term_cb,
+                                                    outcome_cb=out_cb)
 
         spiral_goal = SpiralSearchGoal()
         with drive_detect_concurrence:
@@ -111,7 +110,7 @@ def main():
                                        create_move_state(25, 0, 0),
                                        transitions={'succeeded':'SPIRAL',
                                                     'aborted':'SPIRAL',
-                                                    'preempted':'SPIRAL'})
+                                                    'preempted':'preempted'})
                 smach.StateMachine.add('SPIRAL', create_spiral_search_state(25, 0, 0, 10, 2, 2, math.pi/3))
             smach.Concurrence.add('DRIVE_WHILE_DETECTING', drive_search_state)
 
@@ -154,11 +153,16 @@ def main():
                                             'aborted':'UNSHUTTER_LASER_BEFORE_SEARCH',
                                             'preempted':'DETECT'})
 
-        smach.StateMachine.add('PICKUP_PRECACHE', DetectionPickupState(),
+        smach.StateMachine.add('PICKUP_PRECACHE', DetectionPickupState(rospy.Duration.from_sec(30.0)),
                                transitions={'succeeded':'STOW_AFTER_PICKUP',
-                                            'aborted':'DRIVE_BACKWARD_BEFORE_DETECT',
-                                            'preempted':'DRIVE_BACKWARD_BEFORE_DETECT'})
+                                            'aborted':'STOW_BEFORE_BACKUP',
+                                            'preempted':'STOW_BEFORE_BACKUP'})
 
+        smach.StateMachine.add('STOW_BEFORE_BACKUP', ArmStowState(),
+                               transitions={'succeeded':'DRIVE_BACKWARD_BEFORE_DETECT',
+                                            'aborted':'DRIVE_BACKWARD_BEFORE_DETECT',
+                                            'preempted':'STOW_BEFORE_BACKUP'})
+        
         smach.StateMachine.add('STOW_AFTER_PICKUP', ArmStowState(),
                                transitions={'succeeded':'DETECT_AFTER_PICKUP',
                                             'aborted':'STOW_AFTER_PICKUP',

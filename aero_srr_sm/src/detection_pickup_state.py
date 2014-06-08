@@ -10,11 +10,12 @@ from jaco_msgs.srv import *
 import tf
 
 class DetectionPickupState(smach.State):
-    def __init__(self):
+    def __init__(self, timeout):
         smach.State.__init__(self, outcomes=['succeeded', 'aborted', 'preempted'], input_keys=['detection_msg'])
         self.client = actionlib.SimpleActionClient('/aero/jaco/arm_trajectory', TrajectoryAction)
         self.tf_listener = tf.TransformListener()
         self.home_client = rospy.ServiceProxy('/aero/jaco/home_arm', HomeArm)
+        self.timeout = timeout
             
 
     def execute(self, userdata):
@@ -60,7 +61,7 @@ class DetectionPickupState(smach.State):
             goal=TrajectoryGoal(trajectory);
             self.client.send_goal(goal)
 
-            if not self.client.wait_for_result(rospy.Duration.from_sec(10.0)):
+            if not self.client.wait_for_result(self.timeout):
                 self.client.cancel_all_goals()
 
             rospy.loginfo('Homing Arm')
