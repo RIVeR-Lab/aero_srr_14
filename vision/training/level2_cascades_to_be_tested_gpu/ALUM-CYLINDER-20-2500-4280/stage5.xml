@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<stage5>
+  <maxWeakCount>21</maxWeakCount>
+  <stageThreshold>-2.1494710445404053e+00</stageThreshold>
+  <weakClassifiers>
+    <_>
+      <internalNodes>
+        0 -1 6028 2.6767390966415405e-01</internalNodes>
+      <leafValues>
+        -6.4616078138351440e-01 4.7205501794815063e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 20680 1.7854130268096924e-01</internalNodes>
+      <leafValues>
+        -7.9396027326583862e-01 1.5372546017169952e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 969 1.4437913894653320e-01</internalNodes>
+      <leafValues>
+        -6.7649966478347778e-01 1.8301698565483093e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 44812 -8.9236050844192505e-02</internalNodes>
+      <leafValues>
+        6.9460564851760864e-01 -1.7302231490612030e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 25848 1.5550604462623596e-01</internalNodes>
+      <leafValues>
+        -2.3535975813865662e-01 6.5764832496643066e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 14212 -1.2008856981992722e-02</internalNodes>
+      <leafValues>
+        2.5573986768722534e-01 -5.3048264980316162e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 107609 -1.1342585086822510e-02</internalNodes>
+      <leafValues>
+        2.0320963859558105e-01 -5.6232184171676636e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 10438 2.9271006584167480e-02</internalNodes>
+      <leafValues>
+        1.4445942640304565e-01 -7.8336071968078613e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 9904 2.0482223480939865e-02</internalNodes>
+      <leafValues>
+        6.4814478158950806e-02 -7.6448535919189453e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 122447 -3.1885556876659393e-02</internalNodes>
+      <leafValues>
+        -7.5682687759399414e-01 7.3920823633670807e-02</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 45808 -6.1019891873002052e-03</internalNodes>
+      <leafValues>
+        -6.6602355241775513e-01 1.1863408237695694e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 5818 -5.3008701652288437e-03</internalNodes>
+      <leafValues>
+        1.5382218360900879e-01 -4.9287196993827820e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 48448 -1.5377997420728207e-02</internalNodes>
+      <leafValues>
+        -8.3655071258544922e-01 4.9000039696693420e-02</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 124841 1.5351826325058937e-02</internalNodes>
+      <leafValues>
+        8.4084153175354004e-02 -7.0912486314773560e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 414 -4.0898777544498444e-02</internalNodes>
+      <leafValues>
+        -7.9182934761047363e-01 7.3997534811496735e-02</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 482 3.1777572631835938e-01</internalNodes>
+      <leafValues>
+        6.9261401891708374e-02 -7.9731464385986328e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 10009 1.2974168173968792e-02</internalNodes>
+      <leafValues>
+        8.3049625158309937e-02 -6.8450623750686646e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 113253 -1.3839327730238438e-02</internalNodes>
+      <leafValues>
+        1.5845397114753723e-01 -4.1253107786178589e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 39103 1.7966455221176147e-01</internalNodes>
+      <leafValues>
+        -1.1135644465684891e-01 6.2550491094589233e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 5010 3.8138508796691895e-01</internalNodes>
+      <leafValues>
+        -1.4346227049827576e-01 4.5175349712371826e-01</leafValues></_>
+    <_>
+      <internalNodes>
+        0 -1 124861 5.5162053555250168e-02</internalNodes>
+      <leafValues>
+        -1.0970592498779297e-01 5.8724826574325562e-01</leafValues></_></weakClassifiers></stage5>
+</opencv_storage>
