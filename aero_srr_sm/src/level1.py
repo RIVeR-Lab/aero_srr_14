@@ -153,7 +153,7 @@ def main():
                                             'aborted':'UNSHUTTER_LASER_BEFORE_SEARCH',
                                             'preempted':'DETECT'})
 
-        smach.StateMachine.add('PICKUP_PRECACHE', DetectionPickupState(rospy.Duration.from_sec(30.0)),
+        smach.StateMachine.add('PICKUP_PRECACHE', DetectionPickupState(rospy.Duration.from_sec(40.0)),
                                transitions={'succeeded':'STOW_AFTER_PICKUP',
                                             'aborted':'STOW_BEFORE_BACKUP',
                                             'preempted':'STOW_BEFORE_BACKUP'})
@@ -168,7 +168,7 @@ def main():
                                             'aborted':'STOW_AFTER_PICKUP',
                                             'preempted':'STOW_AFTER_PICKUP'})
 
-        smach.StateMachine.add('DETECT_AFTER_PICKUP', add_state_timeout(2.0, create_detect_state()),
+        smach.StateMachine.add('DETECT_AFTER_PICKUP', add_state_timeout(1.0, create_detect_state()),
                                transitions={'invalid':'DETECT',
                                             'valid':'UNSHUTTER_LASER_AFTER_PICKUP',
                                             'preempted':'UNSHUTTER_LASER_AFTER_PICKUP'})
