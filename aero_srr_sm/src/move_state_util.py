@@ -60,3 +60,21 @@ def create_spiral_search_state_in_frame(frame_id, x, y, angle, search_radius, st
 
 def create_spiral_search_state(x, y, angle, search_radius, start_radius, circle_separation, angle_increment):
     return create_spiral_search_state_in_frame("aero/odom", x, y, angle, search_radius, start_radius, circle_separation, angle_increment)
+
+
+class RawDriveState(smach.State):
+    def __init__(self, x_vel, ang_vel, time):
+        smach.State.__init__(self, outcomes=['succeeded'])
+        self.msg = Twist(linear=Vector3(x=x_vel), angular=Vector3(z=ang_vel))
+        self.pub = rospy.Publisher('aero/cmd_vel', Twist)
+        self.delay = time
+
+    def execute(self, userdata):
+        self.pub.publish(self.msg)
+        rospy.sleep( self.delay )
+        self.pub.publish(Twist())
+        return 'succeeded'
+        
+
+def create_drive_backward_state(vel, time):
+    return RawDriveState(-vel, 0, time)

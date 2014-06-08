@@ -117,6 +117,9 @@ def main():
                                transitions={'succeeded':'DETECT',
                                             'aborted':'DETECT'})
 
+        smach.StateMachine.add('DRIVE_BACKWARD_BEFORE_DETECT', create_drive_backward_state(0.5, 2),
+                               transitions={'succeeded':'DETECT'})
+
         smach.StateMachine.add('DETECT', create_detect_state(),
                                transitions={'invalid':'CHECK_NEAR_PRECACHE',
                                             'valid':'SEARCH_FOR_PRECACHE',
@@ -140,8 +143,8 @@ def main():
 
         smach.StateMachine.add('PICKUP_PRECACHE', DetectionPickupState(),
                                transitions={'succeeded':'UNSHUTTER_LASER_AFTER_PICKUP',
-                                            'aborted':'DETECT',
-                                            'preempted':'DETECT'})
+                                            'aborted':'DRIVE_BACKWARD_BEFORE_DETECT',
+                                            'preempted':'DRIVE_BACKWARD_BEFORE_DETECT'})
 
         smach.StateMachine.add('UNSHUTTER_LASER_AFTER_PICKUP', SimplePublisherState('/aero/laser_shutter', Bool, Bool(False), True),
                                transitions={'succeeded':'RETURN_TO_START'})

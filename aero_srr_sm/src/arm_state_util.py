@@ -48,9 +48,9 @@ def create_arm_fingers(base, f1, f2, f3):
     base.hand_mode = TrajectoryPoint.HAND_MODE_POSITION
     return base
 
-def create_arm_trajectory_state(trajectory):
+def create_arm_trajectory_state(trajectory, timeout=rospy.Duration.from_sec(10.0)):
     goal=TrajectoryGoal(trajectory);
-    return smach_ros.SimpleActionState('/aero/jaco/arm_trajectory', TrajectoryAction, goal)
+    return smach_ros.SimpleActionState('/aero/jaco/arm_trajectory', TrajectoryAction, goal, exec_timeout=timeout)
 
 
 class ArmStowState(smach.State):

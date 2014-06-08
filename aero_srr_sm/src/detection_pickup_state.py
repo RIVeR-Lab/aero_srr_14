@@ -60,7 +60,8 @@ class DetectionPickupState(smach.State):
             goal=TrajectoryGoal(trajectory);
             self.client.send_goal(goal)
 
-            self.client.wait_for_result()
+            if not self.client.wait_for_result(rospy.Duration.from_sec(10.0)):
+                self.client.cancel_all_goals()
 
             rospy.loginfo('Homing Arm')
             self.home_client()
