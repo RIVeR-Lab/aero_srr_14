@@ -34,7 +34,7 @@ class MoveBaseCarrotPlannerServer:
             array = PoseArray()
             array.header.frame_id = 'aero/odom'
 
-            self.tf_listener.waitForTrasform('aero/odom', goal.target_pose.header.frame_id, goal.target_pose.header.stamp, rospy.Duration(1))
+            self.tf_listener.waitForTransform('aero/odom', goal.target_pose.header.frame_id, goal.target_pose.header.stamp, rospy.Duration(1))
             target_pose = self.tf_listener.transformPose('aero/odom', goal.target_pose)
             starting_pose = self.tf_listener.transformPose('aero/odom', PoseStamped(header = Header(frame_id = 'aero/base_footprint')))
             
@@ -61,6 +61,7 @@ class MoveBaseCarrotPlannerServer:
                     
                     next_goal.target_pose.pose.position.x = starting_pose.pose.position.x + current_dist*dx/total_dist
                     next_goal.target_pose.pose.position.y = starting_pose.pose.position.y + current_dist*dy/total_dist
+                    rospy.logdebug('executing segment: %f  (%f, %f)', current_dist, next_goal.target_pose.pose.position.x, next_goal.target_pose.pose.position.y)
                     
                     array.poses.append(copy.deepcopy(next_goal.target_pose.pose))
                     array.header.stamp = rospy.get_rostime()

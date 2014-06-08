@@ -6,11 +6,11 @@
     <rosparam file="$(find aero_srr_bringup)/config/global_costmap_params.yaml" command="load" />
     <rosparam file="$(find aero_srr_bringup)/config/local_planner.yaml" command="load" />
     <param name="clearing_rotation_allowed" value="false"/>
-    <remap from="move_base" to="move_base_raw"/>
+    <!--<remap from="move_base" to="move_base_raw"/>-->
   </node>
-  <node pkg="srr_carrot_planner" type="move_base_carrot_planner.py" name="move_base_carrot_planner" ns="aero">
+  <!--<node pkg="srr_carrot_planner" type="move_base_carrot_planner.py" name="move_base_carrot_planner" ns="aero">
     <param name="max_carrot_distance" value="1.0"/>
-  </node>
+  </node>-->
   <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf" ns="aero">
     <param name="output_frame" value="odom"/>
     <param name="tf_prefix" value="aero"/>

@@ -1,7 +1,7 @@
 #ifndef CASCADE_CLASSIFIER_H_
 #define CASCADE_CLASSIFIER_H_
 
-//#define USE_GPU 1
+#define USE_GPU 1
 
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
