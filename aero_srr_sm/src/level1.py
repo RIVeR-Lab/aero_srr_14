@@ -155,9 +155,14 @@ def main():
                                             'preempted':'DETECT'})
 
         smach.StateMachine.add('PICKUP_PRECACHE', DetectionPickupState(),
-                               transitions={'succeeded':'DETECT_AFTER_PICKUP',
+                               transitions={'succeeded':'STOW_AFTER_PICKUP',
                                             'aborted':'DRIVE_BACKWARD_BEFORE_DETECT',
                                             'preempted':'DRIVE_BACKWARD_BEFORE_DETECT'})
+
+        smach.StateMachine.add('STOW_AFTER_PICKUP', ArmStowState(),
+                               transitions={'succeeded':'DETECT_AFTER_PICKUP',
+                                            'aborted':'STOW_AFTER_PICKUP',
+                                            'preempted':'STOW_AFTER_PICKUP'})
 
         smach.StateMachine.add('DETECT_AFTER_PICKUP', add_state_timeout(5.0, create_detect_state()),
                                transitions={'invalid':'DETECT',
