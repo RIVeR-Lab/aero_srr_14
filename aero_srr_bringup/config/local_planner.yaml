@@ -3,7 +3,7 @@ TrajectoryPlannerROS:
   max_vel_x: 0.4
   min_vel_x: 0.0
   min_rot_vel: 0.2
-  max_rot_vel: 0.5
+  max_rot_vel: 0.45
   min_in_place_rotational_vel: 0.3
 
   acc_lim_th: 1.0
