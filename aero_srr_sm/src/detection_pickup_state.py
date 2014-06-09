@@ -41,7 +41,7 @@ class DetectionPickupState(smach.State):
               grasp_angle = 0
             aproach_dist = 0.1
             grasp_through_dist = 0.04
-            vertical_offset = 0.11
+            vertical_offset = 0.085
 
             rospy.loginfo('Homing Arm')
             self.home_client()
@@ -58,7 +58,8 @@ class DetectionPickupState(smach.State):
             #release sample
                             create_arm_fingers(create_arm_api_pose(-0.35, 0.0, 0.55, -math.pi/2, -math.pi*3/5, 0), 1, 1, 1),
                             create_arm_api_pose(-0.37, 0.02, 0.7, -math.pi/2, -math.pi*3/5, 0),
-                            create_arm_api_pose(-0.37, 0.02, 0.55, math.pi*3/5, -math.pi/3, 0)]
+                            create_arm_api_pose(-0.37, 0.02, 0.55, math.pi*3/5, -math.pi/3, 0),
+                            create_arm_fingers(create_arm_api_pose(-0.37, 0.02, 0.55, math.pi*3/5, -math.pi/3, 0), 60, 60, 60)]
             goal=TrajectoryGoal(trajectory);
             self.client.send_goal(goal)
 

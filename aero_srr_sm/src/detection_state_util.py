@@ -21,7 +21,7 @@ def create_detect_state():
 
 class CheckNearPrecacheState(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['far', 'near', 'close', 'aborted'], input_keys=['detection_msg'], output_keys=['detection_msg'])
+        smach.State.__init__(self, outcomes=['far', 'near', 'close', 'y_offset', 'aborted'], input_keys=['detection_msg'], output_keys=['detection_msg'])
         self.tf_listener = tf.TransformListener()
     def execute(self, userdata):
         object_location = userdata['detection_msg']
@@ -36,6 +36,8 @@ class CheckNearPrecacheState(smach.State):
                 return 'far'
             if object_position.x > 0.85:
                 return 'near'
+            if object_position.y > 0.30 or object_position.y < 0.05:
+                return 'y_offset'
             return 'close'
         except tf.Exception:
             return 'aborted'

@@ -56,7 +56,7 @@ class CheckNearPlatformState(smach.State):
             self.tf_listener.waitForTransform('aero/base_footprint', 'aero/in_front_of_platform', time, rospy.Duration(1))
         
             (trans, rot) = self.tf_listener.lookupTransform('aero/base_footprint', 'aero/in_front_of_platform', time)
-            dist = math.sqrt(trans.x ** 2 + trans.y ** 2 + trans.z ** 2)
+            dist = math.sqrt(trans[0] ** 2 + trans[1] ** 2 + trans[2] ** 2)
 
             print('Checking distance: ', dist )
             if dist > 10:

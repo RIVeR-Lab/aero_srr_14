@@ -141,6 +141,7 @@ def main():
                                transitions={'far':'NAV_NEAR_PRECACHE',
                                             'near':'NAV_CLOSE_PRECACHE',
                                             'close':'PICKUP_PRECACHE',
+                                            'y_offset':'DRIVE_BACKWARD_BEFORE_DETECT',
                                             'aborted':'DETECT'})
 
         smach.StateMachine.add('NAV_NEAR_PRECACHE', DetectionDriveState(-1.5, -0.2),
