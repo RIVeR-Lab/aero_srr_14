@@ -10,9 +10,9 @@
 [
 {name: conservative_reset, type: clear_costmap_recovery/ClearCostmapRecovery},
 {name: move_slow, type: aero_srr_nav/MoveSlowRecovery},
-{name: aggressive_reset, type: clear_costmap_recovery/ClearCostmapRecovery}
+{name: aggressive_reset, type: clear_costmap_recovery/ClearCostmapRecovery},
 {name: move_slow2, type: aero_srr_nav/MoveSlowRecovery},
-{name: aggressive_reset2, type: clear_costmap_recovery/ClearCostmapRecovery}
+{name: aggressive_reset2, type: clear_costmap_recovery/ClearCostmapRecovery},
 {name: move_slow3, type: aero_srr_nav/MoveSlowRecovery},
 {name: aggressive_reset3, type: clear_costmap_recovery/ClearCostmapRecovery}
 ]
