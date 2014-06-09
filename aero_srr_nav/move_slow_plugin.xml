@@ -1,0 +1,7 @@
+<library path="lib/libmove_slow_recovery">
+  <class name="aero_srr_nav/MoveSlowRecovery" type="aero_srr_nav::MoveSlowRecovery" base_class_type="nav_core::RecoveryBehavior">
+    <description>
+      A recovery behavior that moves forward slowly for a specified amount of time
+    </description>
+  </class>
+</library>
