@@ -48,7 +48,7 @@ def create_detect_beacon_state():
 
 class CheckNearPlatformState(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['far', 'near', 'close', 'aborted'])
+        smach.State.__init__(self, outcomes=['far', 'near', 'close', 'y_offset', 'aborted'])
         self.tf_listener = tf.TransformListener()
     def execute(self, userdata):
         try:
@@ -57,12 +57,15 @@ class CheckNearPlatformState(smach.State):
         
             (trans, rot) = self.tf_listener.lookupTransform('aero/base_footprint', 'aero/in_front_of_platform', time)
             dist = math.sqrt(trans[0] ** 2 + trans[1] ** 2 + trans[2] ** 2)
+            y_offset = trans[1]
 
             print('Checking distance: ', dist )
             if dist > 10:
                 return 'far'
             if dist > 5:
                 return 'near'
+            if abs(y_offset) > 1:
+                return 'y_offset'
             return 'close'
         except tf.Exception:
             return 'aborted'
@@ -103,7 +106,11 @@ def create_drive_home_state():
                                transitions={'far':'MOVE_NEAR_PLATFORM',
                                             'near':'MOVE_CLOSE_PLATFORM',
                                             'close':'SHUTTER_LASER_FOR_MOUNT',
+                                            'y_offset':'DRIVE_BACKWARD_FROM_BEACON',
                                             'aborted':'SEARCH_FOR_PLATFORM'})
+
+        smach.StateMachine.add('DRIVE_BACKWARD_FROM_BEACON', create_drive_backward_state(0.5, 3),
+                               transitions={'succeeded':'WAIT_BEFORE_CHECK_NEAR_PLATFORM'})
             
         smach.StateMachine.add('MOVE_NEAR_PLATFORM',
                                create_move_state_in_frame('aero/in_front_of_platform', 4, 0, math.pi),

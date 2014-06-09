@@ -34,7 +34,7 @@ class CheckNearPrecacheState(smach.State):
             print('Checking base relative location ', str(object_position) )
             if object_position.x > 2:
                 return 'far'
-            if object_position.x > 0.85:
+            if object_position.x > 0.9:
                 return 'near'
             if object_position.y > 0.30 or object_position.y < 0.05:
                 return 'y_offset'

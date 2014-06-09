@@ -82,7 +82,7 @@ def main():
                                             'preempted':'STOW_ARM'})
 
         smach.StateMachine.add('LEAVE_PLATFORM',
-                               create_move_state(4, 0, 0),
+                               create_move_state_in_frame('aero/in_front_of_platform', 0, 0, 0),
                                transitions={'succeeded':'UNSHUTTER_LASER',
                                             'aborted':'LEAVE_PLATFORM',
                                             'preempted':'LEAVE_PLATFORM'})
@@ -130,7 +130,7 @@ def main():
                                transitions={'succeeded':'DETECT'})
 
         smach.StateMachine.add('DRIVE_BACKWARD_BEFORE_DETECT', create_drive_backward_state(0.5, 2),
-                               transitions={'succeeded':'DETECT'})
+                               transitions={'succeeded':'WAIT_BEFORE_DETECT'})
 
         smach.StateMachine.add('DETECT', add_state_timeout(2.0, create_detect_state()),
                                transitions={'invalid':'CHECK_NEAR_PRECACHE',
@@ -141,7 +141,7 @@ def main():
                                transitions={'far':'NAV_NEAR_PRECACHE',
                                             'near':'NAV_CLOSE_PRECACHE',
                                             'close':'PICKUP_PRECACHE',
-                                            'y_offset':'DRIVE_BACKWARD_BEFORE_DETECT',
+                                            'y_offset':'STOW_BEFORE_BACKUP',
                                             'aborted':'DETECT'})
 
         smach.StateMachine.add('NAV_NEAR_PRECACHE', DetectionDriveState(-1.5, -0.2),
