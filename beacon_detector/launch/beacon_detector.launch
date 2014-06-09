@@ -74,5 +74,7 @@
 
   <node pkg="tf" type="static_transform_publisher" ns="aero" name="starting_location_publisher"
 	args="1.0 0 0 0 0 0 beacon aero/starting_location 10"/>
+  <node pkg="tf" type="static_transform_publisher" ns="aero" name="starting_location_publisher"
+	args="4.0 0 0 0 0 0 aero/starting_location aero/in_front_of_platform 10"/>
 
 </launch>

@@ -45,6 +45,29 @@ def create_detect_beacon_state():
     return smach_ros.MonitorState("/aero/upper_stereo/beacon_estimate/filtered", PoseStamped, detect_beacon_monitor_cb, output_keys = ['detection_msg'])
 
 
+
+class CheckNearPlatformState(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['far', 'near', 'close', 'aborted'])
+        self.tf_listener = tf.TransformListener()
+    def execute(self, userdata):
+        try:
+            time = rospy.Time.now()
+            self.tf_listener.waitForTransform('aero/base_footprint', 'aero/in_front_of_platform', time, rospy.Duration(1))
+        
+            (trans, rot) = self.tf_listener.lookupTransform('aero/base_footprint', 'aero/in_front_of_platform', time)
+            dist = math.sqrt(trans.x ** 2 + trans.y ** 2 + trans.z ** 2)
+
+            print('Checking distance: ', dist )
+            if dist > 10:
+                return 'far'
+            if dist > 5:
+                return 'near'
+            return 'close'
+        except tf.Exception:
+            return 'aborted'
+
+
 def create_drive_home_state():
     drive_home_state = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
     with drive_home_state:
@@ -57,39 +80,55 @@ def create_drive_home_state():
 
             drive_search_state = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
             with drive_search_state:
-                smach.StateMachine.add('MOVE_NEAR_PLATFORM',
-                                       create_move_state_in_frame('aero/starting_location', 5, 0, math.pi),
+                smach.StateMachine.add('MOVE_TOWARD_PLATFORM',
+                                       create_move_state_in_frame('aero/in_front_of_platform', 0, 0, math.pi),
                                        transitions={'succeeded':'SPIRAL_NEAR_PLATFORM',
                                                     'aborted':'aborted',
                                                     'preempted':'preempted'})
-                smach.StateMachine.add('SPIRAL_NEAR_PLATFORM', create_spiral_search_state_in_frame('aero/starting_location', 5, 0, math.pi, 20, 4, 4, math.pi/4),
+                smach.StateMachine.add('SPIRAL_NEAR_PLATFORM', create_spiral_search_state_in_frame('aero/in_front_of_platform', 0, 0, math.pi, 20, 4, 4, math.pi/4),
                                        transitions={'succeeded':'succeeded',
                                                     'aborted':'aborted',
                                                     'preempted':'preempted'})
             smach.Concurrence.add('DRIVE_WHILE_DETECTING', drive_search_state)
 
         smach.StateMachine.add('SEARCH_FOR_PLATFORM', search_concurrence,
-                               transitions={'succeeded':'WAIT_BEFORE_NAV_IN_FRONT_OF_PLATFORM',
+                               transitions={'succeeded':'WAIT_BEFORE_CHECK_NEAR_PLATFORM',
                                             'aborted':'aborted',
                                             'preempted': 'preempted'})
 
-        smach.StateMachine.add('WAIT_BEFORE_NAV_IN_FRONT_OF_PLATFORM', DelayState(2.0),
-                               transitions={'succeeded':'MOVE_IN_FRONT_OF_PLATFORM'})
+        smach.StateMachine.add('WAIT_BEFORE_CHECK_NEAR_PLATFORM', DelayState(1.0),
+                               transitions={'succeeded':'CHECK_NEAR_PLATFORM'})
 
+        smach.StateMachine.add('CHECK_NEAR_PLATFORM', CheckNearPlatformState(),
+                               transitions={'far':'MOVE_NEAR_PLATFORM',
+                                            'near':'MOVE_CLOSE_PLATFORM',
+                                            'close':'SHUTTER_LASER_FOR_MOUNT',
+                                            'aborted':'SEARCH_FOR_PLATFORM'})
             
-        smach.StateMachine.add('MOVE_IN_FRONT_OF_PLATFORM',
-                               create_move_state_in_frame('aero/starting_location', 4, 0, math.pi),
-                               transitions={'succeeded':'SHUTTER_LASER',
-                                            'aborted':'aborted',
+        smach.StateMachine.add('MOVE_NEAR_PLATFORM',
+                               create_move_state_in_frame('aero/in_front_of_platform', 4, 0, math.pi),
+                               transitions={'succeeded':'WAIT_BEFORE_CHECK_NEAR_PLATFORM',
+                                            'aborted':'WAIT_BEFORE_CHECK_NEAR_PLATFORM',
+                                            'preempted':'preempted'})
+
+        smach.StateMachine.add('MOVE_CLOSE_PLATFORM',
+                               create_move_state_in_frame('aero/in_front_of_platform', 0, 0, math.pi),
+                               transitions={'succeeded':'WAIT_BEFORE_CHECK_NEAR_PLATFORM',
+                                            'aborted':'WAIT_BEFORE_CHECK_NEAR_PLATFORM',
                                             'preempted':'preempted'})
         
-        smach.StateMachine.add('SHUTTER_LASER', create_shutter_laser_state(),
-                               transitions={'succeeded':'NAV_ONTO_PLATFORM', 'failed': 'NAV_ONTO_PLATFORM'})
-        smach.StateMachine.add('NAV_ONTO_PLATFORM',
+        smach.StateMachine.add('SHUTTER_LASER_FOR_MOUNT', create_shutter_laser_state(),
+                               transitions={'succeeded':'MOUNT_PLATFORM', 'failed': 'MOUNT_PLATFORM'})
+        smach.StateMachine.add('MOUNT_PLATFORM',
                                create_move_state_in_frame('aero/starting_location', 0, 0, math.pi),
-                               transitions={'succeeded':'UNSHUTTER_LASER',
-                                            'aborted':'aborted',
-                                            'preempted':'preempted'})
-        smach.StateMachine.add('UNSHUTTER_LASER', create_unshutter_laser_state(),
+                               transitions={'succeeded':'UNSHUTTER_LASER_SUCCESS',
+                                            'aborted':'UNSHUTTER_LASER_ABORT',
+                                            'preempted':'UNSHUTTER_LASER_PREEMPT'})
+        smach.StateMachine.add('UNSHUTTER_LASER_ABORT', create_unshutter_laser_state(),
+                               transitions={'succeeded':'aborted'})
+        smach.StateMachine.add('UNSHUTTER_LASER_PREEMPT', create_unshutter_laser_state(),
+                               transitions={'succeeded':'preempted'})
+
+        smach.StateMachine.add('UNSHUTTER_LASER_SUCCESS', create_unshutter_laser_state(),
                                transitions={'succeeded':'succeeded'})
     return drive_home_state

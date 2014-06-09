@@ -111,7 +111,7 @@ def main():
                                        transitions={'succeeded':'SPIRAL',
                                                     'aborted':'SPIRAL',
                                                     'preempted':'preempted'})
-                smach.StateMachine.add('SPIRAL', create_spiral_search_state(25, 0, 0, 10, 2, 2, math.pi/3))
+                smach.StateMachine.add('SPIRAL', create_spiral_search_state(25, 0, 0, 10, 2, 1, math.pi/3))
             smach.Concurrence.add('DRIVE_WHILE_DETECTING', drive_search_state)
 
         smach.StateMachine.add('UNSHUTTER_LASER_BEFORE_SEARCH', create_unshutter_laser_state(),
