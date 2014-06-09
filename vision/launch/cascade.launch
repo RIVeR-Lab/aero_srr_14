@@ -8,8 +8,8 @@
 {id: 0, label: "hook",
 cascade_path: "$(find vision)/training/hook_cascade.xml",
 object_radius: 0.03,
-scale_factor: 1.01, min_neighbors: 10,
-min_size: {width: 50.0, height: 50.0}, max_size: {width: 150.0, height: 150.0},
+scale_factor: 1.01, min_neighbors: 2,
+min_size: {width: 40.0, height: 40.0}, max_size: {width: 150.0, height: 150.0},
 disparity_size: {width: 20.0, height: 40.0}, disparity_y_offset: 20,
 max_disparity_for_detection: 98.0},
     ]</rosparam>
