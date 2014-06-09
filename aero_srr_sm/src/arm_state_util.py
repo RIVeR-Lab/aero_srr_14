@@ -68,7 +68,7 @@ class ArmStowState(smach.State):
         self.client.wait_for_server()
 
         goal = ArmJointAnglesGoal()
-        goal.angles.Angle_J1 = 0.0698131701
+        goal.angles.Angle_J1 = 0.05
         goal.angles.Angle_J2 = -1.57079633
         goal.angles.Angle_J3 = -0.296705973
         goal.angles.Angle_J4 = -4.86946861
@@ -82,7 +82,7 @@ class ArmStowState(smach.State):
             return 'preempted'
 
         goal = ArmJointAnglesGoal()
-        goal.angles.Angle_J1 = 0.0698131701
+        goal.angles.Angle_J1 = 0.05
         goal.angles.Angle_J2 = -2.77507351
         goal.angles.Angle_J3 = -0.296705973
         goal.angles.Angle_J4 = -4.86946861

@@ -52,12 +52,13 @@ class DetectionPickupState(smach.State):
                             create_arm_api_pose(object_position.x+grasp_through_dist*math.sin(grasp_angle), object_position.y+grasp_through_dist*math.cos(grasp_angle), object_position.z+vertical_offset, -math.pi/2, grasp_angle, 0),
                             create_arm_fingers(create_arm_api_pose(object_position.x+grasp_through_dist*math.sin(grasp_angle), object_position.y+grasp_through_dist*math.cos(grasp_angle), object_position.z+vertical_offset, -math.pi/2, grasp_angle, 0), 60, 60, 60),
                             create_arm_api_pose(object_position.x+grasp_through_dist*math.sin(grasp_angle), object_position.y+grasp_through_dist*math.cos(grasp_angle), object_position.z+0.2, -math.pi/2, grasp_angle, 0),
-                            create_arm_api_pose(0.4, 0.2, 0.4, -math.pi/2, 0, 0),
-                            create_arm_api_pose(-0.2, 0.5, 0.4, -math.pi/2, -math.pi/2, 0),
-                            create_arm_api_pose(-0.3, 0.1, 0.4, -math.pi/2, -math.pi*3/5, 0),
-                            create_arm_fingers(create_arm_api_pose(-0.3, 0.1, 0.4, -math.pi/2, -math.pi*3/5, 0), 1, 1, 1),
-                            create_arm_api_pose(-0.3, 0.1, 0.6, -math.pi/2, -math.pi*3/5, 0),
-                            create_arm_api_pose(-0.3, -0.3, 0.6, -math.pi/2, -math.pi/2, 0)]
+                            create_arm_api_pose(0.4, 0.2, 0.5, -math.pi/2, 0, 0),
+                            create_arm_api_pose(-0.2, 0.5, 0.5, -math.pi/2, -math.pi/2, 0),
+                            create_arm_api_pose(-0.35, 0.0, 0.55, -math.pi/2, -math.pi*3/5, 0),
+            #release sample
+                            create_arm_fingers(create_arm_api_pose(-0.35, 0.0, 0.55, -math.pi/2, -math.pi*3/5, 0), 1, 1, 1),
+                            create_arm_api_pose(-0.37, 0.02, 0.7, -math.pi/2, -math.pi*3/5, 0),
+                            create_arm_api_pose(-0.37, 0.02, 0.55, math.pi*3/5, -math.pi/3, 0)]
             goal=TrajectoryGoal(trajectory);
             self.client.send_goal(goal)
 

@@ -84,7 +84,7 @@ def main():
                                transitions={'succeeded':'DETECTION_PICKUP',
                                             'failed':'failed'})
 
-        smach.StateMachine.add('DETECTION_PICKUP', DetectionPickupState(),
+        smach.StateMachine.add('DETECTION_PICKUP', DetectionPickupState(rospy.Duration.from_sec(40.0)),
                                transitions={'succeeded':'succeeded',
                                             'aborted':'failed',
                                             'preempted':'failed'})
