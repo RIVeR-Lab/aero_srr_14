@@ -89,7 +89,7 @@ def main():
         smach.StateMachine.add('UNSHUTTER_LASER', create_unshutter_laser_state(),
                                transitions={'succeeded':'MOVE_TOWARDS_PRECACHE'})
         smach.StateMachine.add('MOVE_TOWARDS_PRECACHE',
-                               create_move_state(20, 0, 0),
+                               create_move_state(10, 0, 0),
                                transitions={'succeeded':'SEARCH_FOR_PRECACHE',
                                             'aborted':'MOVE_TOWARDS_PRECACHE',
                                             'preempted':'MOVE_TOWARDS_PRECACHE'})

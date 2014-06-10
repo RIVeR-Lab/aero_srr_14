@@ -41,7 +41,7 @@ class DetectionPickupState(smach.State):
               grasp_angle = 0
             aproach_dist = 0.1
             grasp_through_dist = 0.02
-            vertical_offset = 0.085
+            vertical_offset = 0.075
 
             rospy.loginfo('Homing Arm')
             self.home_client()
