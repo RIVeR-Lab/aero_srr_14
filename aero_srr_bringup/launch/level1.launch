@@ -1,6 +1,5 @@
 <launch>
-  <include file="$(find aero_bringup)/launch/robot_aero.launch"/>
-  <include file="$(find aero_srr_bringup)/launch/srr_nav.launch"/>
-  <include file="$(find vision)/launch/cascade.launch"/>
-  <include file="$(find beacon_detector)/launch/beacon_detector.launch"/>
+  <include file="$(find aero_srr_bringup)/launch/base.launch"/>
+  <node pkg="aero_srr_sm" type="level1.py" name="sm">
+  </node>
 </launch>
