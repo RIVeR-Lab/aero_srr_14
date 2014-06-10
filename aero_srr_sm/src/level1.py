@@ -69,13 +69,8 @@ def main():
                                             'preempted':'WAIT_FOR_IMU'})
 
         smach.StateMachine.add('SHUTTER_LASER', create_shutter_laser_state(),
-                               transitions={'succeeded':'WAIT_FOR_START', 'failed': 'WAIT_FOR_START'})
+                               transitions={'succeeded':'STOW_ARM', 'failed': 'STOW_ARM'})
 
-        smach.StateMachine.add('WAIT_FOR_START', FakeState(),
-                               transitions={'succeeded':'STOW_ARM',
-                                            'aborted':'WAIT_FOR_START',
-                                            'preempted':'WAIT_FOR_START'})
-        
         smach.StateMachine.add('STOW_ARM', ArmStowState(),
                                transitions={'succeeded':'LEAVE_PLATFORM',
                                             'aborted':'LEAVE_PLATFORM',
