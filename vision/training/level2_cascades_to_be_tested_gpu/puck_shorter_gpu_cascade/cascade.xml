@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <opencv_storage>
-<cascade>
+<cascade type_id="opencv-haar-classifier">
   <size>
     25 20</size>
   <stages>
