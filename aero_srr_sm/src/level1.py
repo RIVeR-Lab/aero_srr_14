@@ -82,9 +82,14 @@ def main():
                                             'aborted':'LEAVE_PLATFORM',
                                             'preempted':'LEAVE_PLATFORM'})
         smach.StateMachine.add('UNSHUTTER_LASER', create_unshutter_laser_state(),
-                               transitions={'succeeded':'MOVE_TOWARDS_PRECACHE'})
+                               transitions={'succeeded':'MOVE_AROUND_PLATFORM'})
+        smach.StateMachine.add('MOVE_AROUND_PLATFORM',
+                               create_move_state(5, 5, 1.571),
+                               transitions={'succeeded':'MOVE_TOWARDS_PRECACHE',
+                                            'aborted':'MOVE_TOWARDS_PRECACHE',
+                                            'preempted':'MOVE_TOWARDS_PRECACHE'})
         smach.StateMachine.add('MOVE_TOWARDS_PRECACHE',
-                               create_move_state(10, 0, 0),
+                               create_move_state(-45, 31.54, 2.880),
                                transitions={'succeeded':'SEARCH_FOR_PRECACHE',
                                             'aborted':'MOVE_TOWARDS_PRECACHE',
                                             'preempted':'MOVE_TOWARDS_PRECACHE'})
@@ -102,11 +107,11 @@ def main():
             drive_search_state = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
             with drive_search_state:
                 smach.StateMachine.add('CONTINUE_TOWARDS_PRECACHE',
-                                       create_move_state(25, 0, 0),
+                                       create_move_state(-57.34, 40.15, 2.880),
                                        transitions={'succeeded':'SPIRAL',
                                                     'aborted':'SPIRAL',
                                                     'preempted':'preempted'})
-                smach.StateMachine.add('SPIRAL', create_spiral_search_state(25, 0, 0, 10, 2, 1, math.pi/3))
+                smach.StateMachine.add('SPIRAL', create_spiral_search_state(-57.34, 40.15, 2.880, 20, 2, 1, math.pi/3))
             smach.Concurrence.add('DRIVE_WHILE_DETECTING', drive_search_state)
 
         smach.StateMachine.add('UNSHUTTER_LASER_BEFORE_SEARCH', create_unshutter_laser_state(),

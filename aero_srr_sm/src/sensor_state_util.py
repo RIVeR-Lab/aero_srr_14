@@ -22,7 +22,7 @@ def create_shutter_laser_state(io_keys=[]):
         smach.StateMachine.add('SHUTTER_LASER', create_laser_state(True),
                                transitions={'succeeded':'WAIT_CLEAR_COSTMAP'})
         
-        smach.StateMachine.add('WAIT_CLEAR_COSTMAP', DelayState(0.5),
+        smach.StateMachine.add('WAIT_CLEAR_COSTMAP', DelayState(1.0),
                                transitions={'succeeded':'CLEAR_COSTMAP'})
         
         smach.StateMachine.add('CLEAR_COSTMAP', create_clear_costmap_state(),
