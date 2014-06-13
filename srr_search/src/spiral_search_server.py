@@ -67,7 +67,8 @@ class SpiralSearchServer:
             array.header.stamp = rospy.get_rostime()
             self.spiral_pub.publish(array)
             
-            result = self.move_base_client.send_goal_and_wait(next_goal)
+            result = self.move_base_client.send_goal_and_wait(next_goal, rospy.Duration.from_sec(10.0), rospy.Duration.from_sec(10.0))
+
             angle = angle + goal.angle_increment
         self.server.set_preempted()
         
