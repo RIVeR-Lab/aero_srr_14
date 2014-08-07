@@ -1,23 +1,30 @@
 #include <vision/cascade_classifier.h>
 #include <boost/foreach.hpp>
 #include <boost/assign/list_of.hpp>
+#include <omp.h>
 
 namespace vision{
   using namespace message_filters::sync_policies;
 
   CascadeClassifier::CascadeClassifier(ros::NodeHandle nh, ros::NodeHandle pnh): it_(nh), stereo_model_init_(false), show_windows_(false){
-    scale_factor_ = 1.05;
-    min_neighbors_ = 1;
-    min_size_ = cv::Size(50, 50);
-    max_size_ = cv::Size(150, 150);
-    robot_frame_ = "aero/base_footprint";
-    object_radius_ = 0.03;
-    max_disparity_for_detection_ = 98;
-
-    std::string cascade_path = "/home/aero/srr/src/aero_srr_14/vision/cascadeTraining4bHookdata/cascade.xml";
-
     pnh.getParam("show_windows", show_windows_);
-    pnh.getParam("cascade_path", cascade_path);
+    pnh.getParam("robot_frame", robot_frame_);
+
+    robot_frame_ = "aero/base_footprint";
+
+
+    XmlRpc::XmlRpcValue training_xml;
+    if(!pnh.getParam("training", training_xml)){
+      ROS_WARN("No training definitions specified");
+    }
+    try{
+      training_definitions_ = parse_training_definitions(training_xml);
+      BOOST_FOREACH(training_definition_ptr def, training_definitions_){
+        training_definitions_by_id_[def->id()] = def;
+      }
+    } catch(XmlRpc::XmlRpcException e){
+      ROS_ERROR_STREAM("Error loading training definitions: "<<e.getMessage());
+    }
 
 
 
@@ -48,12 +55,6 @@ namespace vision{
     sub_l_info_.subscribe(nh, "left/camera_info", 1);
     sub_r_info_.subscribe(nh, "right/camera_info", 1);
 
-    
-
-
-    if (!cascade_classifier_.load(cascade_path)) {
-      ROS_ERROR("Error loading cascade classifier: %s", cascade_path.c_str());
-    }
 
     if(show_windows_){
       cv::namedWindow("image");
@@ -88,7 +89,7 @@ namespace vision{
   void CascadeClassifier::infoCb(const CameraInfoConstPtr& l_info_msg,
 				 const CameraInfoConstPtr& r_info_msg){
     
-    boost::lock_guard<boost::mutex> lock(stereo_model_mutex_);
+    boost::unique_lock<boost::shared_mutex> lock(stereo_model_mutex_);
     stereo_model_.fromCameraInfo(l_info_msg, r_info_msg);
     stereo_model_init_ = true;
   }
@@ -98,100 +99,105 @@ namespace vision{
     cv::Mat image_gray;
     cv::cvtColor(l_mat, image_gray, CV_RGB2GRAY);
     cv::equalizeHist(image_gray, image_gray);
-#ifdef USE_GPU
-    cv::gpu::GpuMat image_gray_gpu(image_gray);
-#endif
 
     cv::Mat disparity_color;
     cv::convertScaleAbs(d_image, disparity_color, 100, 0.0);
     cv::cvtColor(disparity_color, disparity_color, CV_GRAY2RGB);
 
-    std::vector<cv::Rect> detections;
+    std::vector<detection_set> detections;
 
-    ros::Time classifier_start = ros::Time::now();
-#ifdef USE_GPU
-    cv::gpu::GpuMat gpu_detections_mat;
-    int num_detections = cascade_classifier_.detectMultiScale(image_gray_gpu, gpu_detections_mat, scale_factor_, min_neighbors_, min_size_);
-    cv::Mat detections_mat;
-    gpu_detections_mat.colRange(0, num_detections).download(detections_mat);
-    cv::Rect* detections_rects = detections_mat.ptr<cv::Rect>();
-    for(int i = 0; i < num_detections; ++i)
-      detections.push_back(detections_rects[i]);
-#else
-    cascade_classifier_.detectMultiScale(image_gray, detections, scale_factor_, min_neighbors_, 0, min_size_, max_size_);
-#endif
-
-    ros::Time post_start = ros::Time::now();
-    {
-      boost::lock_guard<boost::mutex> lock(stereo_model_mutex_);
+    {//check that the model has been initialized yet, if not just drop the frame
+      boost::lock_guard<boost::shared_mutex> lock(stereo_model_mutex_);
       if(!stereo_model_init_)
 	return;
-      BOOST_FOREACH(cv::Rect detection, detections){
-	cv::Point2d detection_center(detection.x + detection.width / 2,
-			 detection.y + detection.height / 2);
+    }
 
-	cv::Point2d disparity_center(detection_center.x,
-			 detection_center.y+40);
+#pragma omp parallel for shared(detections)
+    for(int i = 0; i<training_definitions_.size(); ++i){
+      training_definition_ptr definition = training_definitions_[i];
 
-// Find the average disparity of the detection and check if it is invalid or too close (disparity to big)
-	float disp_val = average_disparity(d_image, detection_center, 20, 40);
-	
-	if(disp_val<0){
-          ROS_DEBUG("No disparity for detection: In left camera at (%d, %d)", (int)detection_center.x, (int)detection_center.y);
-	  cv::ellipse(l_mat, detection_center,
-		      cv::Size(detection.width / 2, detection.height / 2),
-		      0, 0, 360, cv::Scalar(0, 0, 255), 2, 8, 0);
-	  continue;
+      ros::Time classifier_start = ros::Time::now();
+      detection_set detection = definition->detect(image_gray, definition);
+      ROS_DEBUG("Classification done: %fs", (ros::Time::now()-classifier_start).toSec());
+
+      {
+	boost::lock_guard<boost::shared_mutex> lock(stereo_model_mutex_);
+
+	BOOST_FOREACH(detection_object& object, detection.objects){
+	  object.detection_center = cv::Point2d(object.rect.x + object.rect.width / 2,
+						object.rect.y + object.rect.height / 2);
+
+	  object.disparity_center = cv::Point2d(object.detection_center.x,
+						object.detection_center.y+30);
+
+	  object.disp_val = average_disparity(d_image, object.disparity_center, 20, 40);
+
+	  stereo_model_.projectDisparityTo3d(object.detection_center, object.disp_val, object.projected_position);
+	  object.projected_position.z += definition->object_radius();
 	}
-	else if(disp_val>max_disparity_for_detection_){
-          ROS_DEBUG("Disparity above max for detection: In left camera at (%d, %d)", (int)detection_center.x, (int)detection_center.y);
-	  cv::ellipse(l_mat, detection_center,
-		      cv::Size(detection.width / 2, detection.height / 2),
-		      0, 0, 360, cv::Scalar(0, 0, 255), 2, 8, 0);
-	  continue;
-	}
-
-	cv::ellipse(l_mat, detection_center,
-		    cv::Size(detection.width / 2, detection.height / 2),
-		    0, 0, 360, cv::Scalar(255, 0, 0), 2, 8, 0);
-
-	cv::rectangle(disparity_color,
-		      cv::Point(detection_center.x - 20 / 2,
-                                detection_center.y - 40 / 2),
-		      cv::Point(detection_center.x + 20 / 2,
-                                detection_center.y + 40 / 2),
-		      cv::Scalar(255, 0, 0), 2);
-
-
-	cv::Point3d projected_position;
-	stereo_model_.projectDisparityTo3d(detection_center, disp_val, projected_position);
-	projected_position.z += object_radius_;
-
-	tf::Point position_tf(projected_position.x, projected_position.y, projected_position.z);
-
-	geometry_msgs::PointStamped camera_point, robot_point;
-	camera_point.header.frame_id = l_camera_frame;
-	camera_point.header.stamp = time;
-	tf::pointTFToMsg(position_tf, camera_point.point);
-
-        ROS_DEBUG("Got detection: In left camera at (%d, %d), disp = %f (%f m)", (int)detection_center.x, (int)detection_center.y, disp_val, projected_position.z);
-
-	geometry_msgs::PoseWithCovarianceStamped msg;
-	msg.header = camera_point.header;
-	msg.pose.pose.position = camera_point.point;
-	msg.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, 0);
-	msg.pose.covariance = boost::assign::list_of(0.2) (0)   (0)  (0)  (0)  (0)
-						      (0)  (0.2)  (0)  (0)  (0)  (0)
-						      (0)   (0)  (0.3) (0)  (0)  (0)
-						      (0)   (0)   (0)  (0)  (0)  (0)
-						      (0)   (0)   (0)  (0)  (0)  (0)
-						      (0)   (0)   (0)  (0)  (0)  (0) ;
-	object_location_pub_.publish(msg);
-
       }
 
+#pragma omp critical
+      {
+        detections.push_back(detection);
+      }
     }
-    ros::Time publish_start = ros::Time::now();
+
+    BOOST_FOREACH(detection_set& detection, detections){
+      BOOST_FOREACH(detection_object& object, detection.objects){
+
+	cv::Scalar color;
+	if(object.disp_val<0){
+          ROS_DEBUG("No disparity for detection: In left camera at (%d, %d)", (int)object.detection_center.x, (int)object.detection_center.y);
+	  color = cv::Scalar(0, 0, 255);
+	}
+	else if(object.disp_val > detection.definition->max_disparity_for_detection()){
+          ROS_DEBUG("Disparity above max for detection: In left camera at (%d, %d), disp = %f, (%f m)", (int)object.detection_center.x, (int)object.detection_center.y, object.disp_val, object.projected_position.z);
+	  color = cv::Scalar(0, 255, 0);
+	}
+	else{
+	  color = cv::Scalar(255, 0, 0);
+
+	  tf::Point position_tf(object.projected_position.x, object.projected_position.y, object.projected_position.z);
+	  geometry_msgs::PointStamped camera_point, robot_point;
+	  camera_point.header.frame_id = l_camera_frame;
+	  camera_point.header.stamp = time;
+	  tf::pointTFToMsg(position_tf, camera_point.point);
+
+          ROS_DEBUG("Got detection: In left camera at (%d, %d), disp = %f (%f m)", (int)object.detection_center.x, (int)object.detection_center.y, object.disp_val, object.projected_position.z);
+
+	  geometry_msgs::PoseWithCovarianceStamped msg;
+	  msg.header = camera_point.header;
+	  msg.pose.pose.position = camera_point.point;
+	  msg.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, 0);
+	  msg.pose.covariance = boost::assign::list_of(0.2) (0)   (0)  (0)  (0)  (0)
+	    (0)  (0.2)  (0)  (0)  (0)  (0)
+	    (0)   (0)  (0.3) (0)  (0)  (0)
+	    (0)   (0)   (0)  (0)  (0)  (0)
+	    (0)   (0)   (0)  (0)  (0)  (0)
+	    (0)   (0)   (0)  (0)  (0)  (0) ;
+	  object_location_pub_.publish(msg);
+	}
+
+	cv::ellipse(l_mat, object.detection_center,
+		    cv::Size(object.rect.width / 2, object.rect.height / 2),
+		    0, 0, 360, color, 2, 8, 0);
+
+	putTextCenter(l_mat, detection.definition->label(), object.detection_center,
+		      CV_FONT_HERSHEY_SIMPLEX, 1,
+		      cv::Scalar(39, 100, 206), 2);
+
+	cv::rectangle(disparity_color,
+		      cv::Point(object.disparity_center.x - 10 / 2,
+                                object.disparity_center.y - 20 / 2),
+		      cv::Point(object.disparity_center.x + 10 / 2,
+                                object.disparity_center.y + 20 / 2),
+		      color, 2);
+
+
+      }
+    }
+
 
     cv_bridge::CvImage disparity_msg;
     disparity_msg.header.stamp   = time;
@@ -214,7 +220,6 @@ namespace vision{
       cv::waitKey(3);
     }
 
-    ROS_DEBUG("Classification done,  pre: %fs, class: %fs, post: %fs, publish: %fs", (classifier_start-pre_start).toSec(), (post_start-classifier_start).toSec(), (publish_start-post_start).toSec(), (ros::Time::now()-publish_start).toSec());
   }
 
   float CascadeClassifier::average_disparity(const cv::Mat& disp, const cv::Point2d& pt, int width, int height) {
@@ -237,6 +242,53 @@ namespace vision{
   }
 
 
+  void CascadeClassifier::putTextCenter(cv::Mat& img, const std::string& text, cv::Point org, int font_face, double scale, cv::Scalar color, int thickness){
+    int baseline = 0;
+    cv::Size text_size = cv::getTextSize(text, font_face, scale, thickness, &baseline);
+    cv::Point text_org(org.x - text_size.width/2,
+		  org.y + text_size.height/2);
+    cv::putText(img, text, text_org, font_face, scale, color, thickness);
+  }
+
+
+
+  std::vector<training_definition_ptr> CascadeClassifier::parse_training_definitions(XmlRpc::XmlRpcValue& training_descriptions){
+    std::vector<training_definition_ptr> definitions;
+    ROS_ASSERT(training_descriptions.getType() == XmlRpc::XmlRpcValue::TypeArray);
+    for (int32_t i = 0; i < training_descriptions.size(); ++i) {
+      XmlRpc::XmlRpcValue& training_description = training_descriptions[i];
+      definitions.push_back(parse_training_definition(training_description));
+    }
+    return definitions;
+  }
+
+  training_definition_ptr CascadeClassifier::parse_training_definition(XmlRpc::XmlRpcValue& training_description){
+    ROS_ASSERT(training_description.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    ROS_ASSERT(training_description["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+    ROS_ASSERT(training_description["label"].getType() == XmlRpc::XmlRpcValue::TypeString);
+    ROS_ASSERT(training_description["cascade_path"].getType() == XmlRpc::XmlRpcValue::TypeString);
+    ROS_ASSERT(training_description["object_radius"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    ROS_ASSERT(training_description["scale_factor"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    ROS_ASSERT(training_description["min_neighbors"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+    ROS_ASSERT(training_description["max_disparity_for_detection"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    return training_definition_ptr(new training_definition(
+	(int)training_description["id"],
+	(std::string)training_description["label"],
+	(std::string)training_description["cascade_path"],
+	(double)training_description["object_radius"],
+	(double)training_description["scale_factor"],
+	(int)training_description["min_neighbors"],
+	parse_size(training_description["min_size"]),
+	parse_size(training_description["max_size"]),
+        (float)(double)training_description["max_disparity_for_detection"] ));
+  }
+
+  cv::Size CascadeClassifier::parse_size(XmlRpc::XmlRpcValue& size){
+    ROS_ASSERT(size.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    ROS_ASSERT(size["width"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    ROS_ASSERT(size["height"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    return cv::Size((double)size["width"], (double)size["height"]);
+  }
 
 
 }
